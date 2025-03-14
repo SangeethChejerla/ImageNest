@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import ImageUpload from "@/components/images/image-upload"
 import ImageGrid from "@/components/images/image-grid"
+import ImageUpload from "@/components/images/image-upload"
+import { analyzeImage } from "@/lib/ai"
 //import { analyzeImage } from "@/services/ai-service"
 
 export default async function DashboardPage() {
