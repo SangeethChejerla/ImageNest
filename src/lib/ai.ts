@@ -11,9 +11,21 @@ export async function analyzeImage(imageId: string, imageUrl: string) {
 
     if (imageError) throw imageError
 
-    // Call Gemini API to analyze the image
+    // Fetch the image as base64 if imageUrl is an external URL
+    let imageBase64
+    if (imageUrl.startsWith('http')) {
+      const imageResponse = await fetch(imageUrl)
+      if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.statusText}`)
+      const imageBuffer = await imageResponse.arrayBuffer()
+      imageBase64 = Buffer.from(imageBuffer).toString('base64')
+    } else {
+      // Assume it's already base64
+      imageBase64 = imageUrl.replace(/^data:image\/\w+;base64,/, '')
+    }
+
+    // Call Gemini API to analyze the image using gemini-2.0-flash model
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent",
+      "https://generativelanguage.googleapis.com/v2/models/gemini-2.0-flash:generateContent",
       {
         method: "POST",
         headers: {
@@ -30,17 +42,17 @@ export async function analyzeImage(imageId: string, imageUrl: string) {
                 {
                   inline_data: {
                     mime_type: "image/jpeg",
-                    data: imageUrl,
+                    data: imageBase64,
                   },
                 },
               ],
             },
           ],
-          generationConfig: {
+          generation_config: {
             temperature: 0.4,
-            topK: 32,
-            topP: 1,
-            maxOutputTokens: 1024,
+            top_k: 32,
+            top_p: 1,
+            max_output_tokens: 1024,
           },
         }),
       },
@@ -52,12 +64,14 @@ export async function analyzeImage(imageId: string, imageUrl: string) {
     }
 
     const result = await response.json()
-    const aiDescription = result.candidates[0]?.content?.parts[0]?.text || "No analysis available"
+    
+    // Extract the response text from the correct path in the response structure
+    const aiDescription = result.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available"
 
     // Update the image record with the AI description
     const { error: updateError } = await supabase
       .from("images")
-      .update({ ai_description: aiDescription })
+      .update({ ai_description: aiDescription, analyzed_at: new Date().toISOString() })
       .eq("id", imageId)
 
     if (updateError) throw updateError
@@ -68,4 +82,3 @@ export async function analyzeImage(imageId: string, imageUrl: string) {
     return { success: false, error: error.message }
   }
 }
-
