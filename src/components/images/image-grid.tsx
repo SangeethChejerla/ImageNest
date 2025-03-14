@@ -56,21 +56,16 @@ export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }
         // Update local state
         setImages(images.filter((img) => img.id !== imageId))
 
-        toast({
-          title: "Success",
-          description: "Image deleted successfully",
-        })
+        toast( "Success",
+         )
 
         // Close dialog if the deleted image is the selected one
         if (selectedImage && selectedImage.id === imageId) {
           setSelectedImage(null)
         }
       } catch (error: any) {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to delete image",
-          variant: "destructive",
-        })
+        toast( "Error",
+          )
       } finally {
         setIsDeleting(false)
       }
@@ -98,16 +93,11 @@ export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }
         setSelectedImage(data)
       }
 
-      toast({
-        title: "Success",
-        description: "Image analyzed successfully",
-      })
+      toast( "Success",
+        )
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to analyze image",
-        variant: "destructive",
-      })
+      toast( "Error",
+        )
     } finally {
       setIsAnalyzing(false)
     }
