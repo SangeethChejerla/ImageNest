@@ -3,7 +3,6 @@
 import { useState } from "react"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
-import type { Database } from "@/types/database.types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,19 +13,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {toast} from 'sonner'
 import { Trash2, Maximize, MessageSquare } from "lucide-react"
+import {toast} from 'sonner'
 import { useRouter } from "next/navigation"
 
-type ImageType = Database["public"]["Tables"]["images"]["Row"]
+type ImageType = {
+  id: string
+  created_at: string
+  user_id: string
+  path: string
+  name: string
+  size: number
+  type: string
+  description: string | null
+  ai_description: string | null
+  url: string // Pre-computed URL from the server
+}
 
 interface ImageGridProps {
   initialImages: ImageType[]
-  getImageUrl: (path: string) => string
-  onAnalyzeImage?: (imageId: string, imagePath: string) => Promise<void>
+  onAnalyzeImage: (imageId: string, imagePath: string) => Promise<any>
 }
 
-export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }: ImageGridProps) {
+export default function ImageGrid({ initialImages, onAnalyzeImage }: ImageGridProps) {
   const [images, setImages] = useState<ImageType[]>(initialImages)
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -56,16 +65,14 @@ export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }
         // Update local state
         setImages(images.filter((img) => img.id !== imageId))
 
-        toast( "Success",
-         )
+        toast(  "Image deleted successfully")
 
         // Close dialog if the deleted image is the selected one
         if (selectedImage && selectedImage.id === imageId) {
           setSelectedImage(null)
         }
       } catch (error: any) {
-        toast( "Error",
-          )
+        toast('Error')
       } finally {
         setIsDeleting(false)
       }
@@ -80,24 +87,12 @@ export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }
     try {
       await onAnalyzeImage(imageId, imagePath)
 
-      // Refresh the image data
-      const { data, error } = await supabase.from("images").select("*").eq("id", imageId).single()
+      // Refresh the page to get updated data
+      router.refresh()
 
-      if (error) throw error
-
-      // Update the image in the local state
-      setImages(images.map((img) => (img.id === imageId ? data : img)))
-
-      // Update selected image if it's the one being analyzed
-      if (selectedImage && selectedImage.id === imageId) {
-        setSelectedImage(data)
-      }
-
-      toast( "Success",
-        )
+      toast( "Image analyzed successfully")
     } catch (error: any) {
-      toast( "Error",
-        )
+      toast( "Error")
     } finally {
       setIsAnalyzing(false)
     }
@@ -118,7 +113,7 @@ export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }
           <CardContent className="p-0 relative">
             <div className="aspect-square relative">
               <Image
-                src={getImageUrl(image.path) || "/placeholder.svg"}
+                src={image.url || "/placeholder.svg"}
                 alt={image.description || image.name}
                 fill
                 className="object-cover transition-all hover:scale-105"
@@ -139,7 +134,7 @@ export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }
                   </DialogHeader>
                   <div className="relative aspect-video w-full">
                     <Image
-                      src={getImageUrl(image.path) || "/placeholder.svg"}
+                      src={image.url || "/placeholder.svg"}
                       alt={image.description || image.name}
                       fill
                       className="object-contain"
@@ -164,7 +159,7 @@ export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </Button>
-                    {onAnalyzeImage && !image.ai_description && (
+                    {typeof onAnalyzeImage === 'function' && !image.ai_description && (
                       <Button onClick={() => handleAnalyze(image.id, image.path)} disabled={isAnalyzing}>
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Analyze with AI
@@ -181,7 +176,7 @@ export default function ImageGrid({ initialImages, getImageUrl, onAnalyzeImage }
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
-              {onAnalyzeImage && !image.ai_description && (
+              {typeof onAnalyzeImage === 'function' && !image.ai_description && (
                 <Button
                   variant="default"
                   size="icon"

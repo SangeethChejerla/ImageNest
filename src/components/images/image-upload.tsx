@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import {toast} from 'sonner'
+
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Upload, ImageIcon } from "lucide-react"
-
+import {toast} from 'sonner'
 
 export default function ImageUpload() {
   const [file, setFile] = useState<File | null>(null)
@@ -23,7 +23,6 @@ export default function ImageUpload() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
-
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -108,7 +107,7 @@ export default function ImageUpload() {
         fileInputRef.current.value = ""
       }
 
-      toast(  "Image uploaded successfully",
+      toast( "Image uploaded successfully"
       )
 
       // Refresh the page to show the new image

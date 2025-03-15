@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import ImageGrid from "@/components/images/image-grid"
 import ImageUpload from "@/components/images/image-upload"
+import ImageGrid from "@/components/images/image-grid"
 import { analyzeImage } from "@/lib/ai"
-//import { analyzeImage } from "@/services/ai-service"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -24,19 +23,15 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
 
-  // Function to get image URL
-  const getImageUrl = (path: string) => {
-    const { data } = supabase.storage.from("images").getPublicUrl(path)
-    return data.publicUrl
-  }
-
-  // Server action for AI analysis
-  async function handleAnalyzeImage(imageId: string, imagePath: string) {
-    "use server"
-
-    const imageUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + "/storage/v1/object/public/images/" + imagePath
-    await analyzeImage(imageId, imageUrl)
-  }
+  // Pre-compute image URLs on the server
+  const imagesWithUrls =
+    images?.map((image) => {
+      const { data } = supabase.storage.from("images").getPublicUrl(image.path)
+      return {
+        ...image,
+        url: data.publicUrl,
+      }
+    }) || []
 
   return (
     <div className="space-y-6">
@@ -58,7 +53,7 @@ export default async function DashboardPage() {
               <CardDescription>View and manage all your uploaded images.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ImageGrid initialImages={images || []} getImageUrl={getImageUrl} onAnalyzeImage={handleAnalyzeImage} />
+              <ImageGrid initialImages={imagesWithUrls} onAnalyzeImage={analyzeImage} />
             </CardContent>
           </Card>
         </TabsContent>
